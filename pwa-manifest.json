@@ -1,0 +1,24 @@
+{
+  "name": "CherryManager - Gestión de Cerezas",
+  "short_name": "CherryManager",
+  "description": "Gestiona tu inventario de cerezas offline con IndexedDB",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#fff0f5",
+  "theme_color": "#c2185b",
+  "lang": "es",
+  "orientation": "portrait",
+  "icons": [
+    {
+            "src": "img/fav-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "img/fav-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+  ]
+}

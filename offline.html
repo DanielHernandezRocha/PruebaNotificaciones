@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sin conexión - SystemNova</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .cherry-anim {
+      width: 100px;
+      animation: bounce 1.5s infinite ease-in-out;
+      margin-bottom: 15px;
+    }
+    @keyframes bounce {
+      0% { transform: translateY(0); }
+      50% { transform: translateY(-15px); }
+      100% { transform: translateY(0); }
+    }
+    #listaOffline {
+      margin-top: 15px;
+      background: white;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,.1);
+    }
+    #listaOffline li {
+      padding: .5rem;
+      border-bottom: 1px solid #eee;
+      font-size: .9rem;
+    }
+    #listaOffline li:last-child {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="content" style="text-align:center; padding:20px;">
+    <img src="img/fav-192.png" class="cherry-anim" alt="Cereza animada">
+    <h1>Estás sin conexión</h1>
+    <p>
+      Aunque no tengas internet, tus cerezas siguen aquí 🍒.<br>
+      Las cerezas siempre han sido símbolo de frescura, dulzura y energía…
+      ¡Así como tu inventario que espera a sincronizarse pronto!
+    </p>
+
+    <h3>Inventario guardado</h3>
+    <ul id="listaOffline"></ul>
+
+    <button class="reload-btn" onclick="location.reload()">Recargar</button>
+  </div>
+
+  <script>
+    let db;
+    const DB_NAME = "CherryDB";
+    const STORE_NAME = "cerezas";
+
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onsuccess = e => {
+      db = e.target.result;
+      listarOffline();
+    };
+
+    function listarOffline() {
+      const lista = document.getElementById("listaOffline");
+      lista.innerHTML = "";
+      const tx = db.transaction(STORE_NAME, "readonly");
+      const store = tx.objectStore(STORE_NAME);
+      store.openCursor().onsuccess = e => {
+        const cursor = e.target.result;
+        if (cursor) {
+          const li = document.createElement("li");
+          li.textContent = `${cursor.value.nombre} - ${cursor.value.cantidad} unidades`;
+          lista.appendChild(li);
+          cursor.continue();
+        }
+      };
+    }
+  </script>
+</body>
+</html>

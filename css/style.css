@@ -1,0 +1,97 @@
+:root {
+  --bg: #fff0f5;
+  --primary: #c2185b;
+  --secondary: #f48fb1;
+  --text: #4e342e;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+header {
+  background: var(--primary);
+  color: white;
+  padding: 1rem;
+  text-align: center;
+}
+
+main {
+  flex: 1;
+  padding: 1rem;
+  max-width: 600px;
+  margin: auto;
+}
+
+.form-section, .list-section {
+  background: white;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,.1);
+}
+
+input {
+  width: 100%;
+  padding: .5rem;
+  margin: .25rem 0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+button {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: .6rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--secondary);
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: .5rem;
+  border-bottom: 1px solid #eee;
+}
+
+li span {
+  flex: 1;
+}
+
+li button {
+  margin-left: .5rem;
+  background: #e91e63;
+  font-size: .7rem;
+  padding: .3rem .6rem;
+}
+
+.reload-btn {
+  background: #eee;
+  border: 1px solid #ccc;
+  padding: .5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+footer {
+  text-align: center;
+  padding: 1rem;
+  font-size: .8rem;
+}

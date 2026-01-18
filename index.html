@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CherryManager - Gestión de Cerezas</title>
+
+  <!-- Iconos locales -->
+  <link rel="shortcut icon" href="img/fav-16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="img/fav-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="img/fav-16.png">
+  <link rel="apple-touch-icon" href="img/fav-57.png">
+  <link rel="apple-touch-icon" sizes="114x114" href="img/fav-114.png">
+  <link rel="apple-touch-icon" sizes="72x72" href="img/fav-72.png">
+  <link rel="apple-touch-icon" sizes="144x144" href="img/fav-144.png">
+
+  <meta name="msapplication-TileColor" content="#c2185b">
+  <meta name="theme-color" content="#c2185b">
+
+  <!-- Base para rutas absolutas al repo -->
+  <base href="/cherry-PWA/">
+
+  <link rel="manifest" href="pwa-manifest.json">
+  <link rel="stylesheet" href="css/style.css">
+  <script defer src="js/main.js"></script>
+</head>
+<body>
+  <header>
+    <h1>🍒 CherryManager</h1>
+    <p>Gestiona tu inventario de cerezas offline</p>
+    <img src="img/fav-192.png" alt="Cereza" width="120">
+  </header>
+
+  <main>
+    <section class="form-section">
+      <h2>Agregar Cereza</h2>
+      <input id="nombre" placeholder="Nombre de la cereza" />
+      <input id="cantidad" type="number" placeholder="Cantidad" min="1" />
+      <button id="agregar">Agregar</button>
+      <button id="notificar" style="margin-top: 10px; background-color: #4CAF50;">🔔 Enviar Notificación</button>
+    </section>
+
+    <section class="list-section">
+      <h2>Inventario</h2>
+      <ul id="lista"></ul>
+    </section>
+  </main>
+
+  <footer>
+    <p>Desarrollado con ❤️ y por SystemNova</p>
+  </footer>
+</body>
+</html>
