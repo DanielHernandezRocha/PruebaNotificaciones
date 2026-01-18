@@ -1,4 +1,5 @@
-const CACHE_NAME = "cherry-pwa-1.0";
+// Actualizar la versión del caché para forzar actualización
+const CACHE_NAME = "cherry-pwa-2.0";
 const GH_REPO = "/cherry-PWA"; // ← exactamente como aparece en la URL
 
 const urlsToCache = [
@@ -26,9 +27,11 @@ self.addEventListener("install", e => {
 self.addEventListener("activate", e => {
   e.waitUntil(
     caches.keys().then(cacheNames => {
+      // Eliminar todos los cachés antiguos
       return Promise.all(
         cacheNames.map(cacheName => {
           if (cacheName !== CACHE_NAME) {
+            console.log("Eliminando caché antiguo:", cacheName);
             return caches.delete(cacheName);
           }
         })
@@ -39,30 +42,28 @@ self.addEventListener("activate", e => {
 });
 
 self.addEventListener("fetch", e => {
+  // Estrategia Network-First: Intenta la red primero, luego el caché
   e.respondWith(
-    caches.match(e.request).then(response => {
-      // Si está en caché, devolverlo
-      if (response) {
-        return response;
-      }
-      // Intentar fetch
-      return fetch(e.request).then(fetchResponse => {
-        // Si es una respuesta válida, cachearla
-        if (fetchResponse && fetchResponse.status === 200 && fetchResponse.type === 'basic') {
-          const responseToCache = fetchResponse.clone();
+    fetch(e.request)
+      .then(response => {
+        // Si la respuesta es válida, actualizar el caché
+        if (response && response.status === 200 && response.type === 'basic') {
+          const responseToCache = response.clone();
           caches.open(CACHE_NAME).then(cache => {
             cache.put(e.request, responseToCache);
           });
         }
-        return fetchResponse;
-      }).catch(() => {
-        // Si falla y es una navegación, devolver offline.html
-        if (e.request.mode === 'navigate') {
-          return caches.match(`${GH_REPO}/offline.html`);
-        }
-        // Para otros recursos, intentar devolver del caché o error
-        return caches.match(e.request);
-      });
-    })
+        return response;
+      })
+      .catch(() => {
+        // Si falla la red, intentar el caché
+        return caches.match(e.request).then(response => {
+          // Si no está en caché y es una navegación, devolver offline.html
+          if (!response && e.request.mode === 'navigate') {
+            return caches.match(`${GH_REPO}/offline.html`);
+          }
+          return response;
+        });
+      })
   );
 });

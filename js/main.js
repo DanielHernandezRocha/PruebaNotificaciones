@@ -2,11 +2,41 @@
 // CONFIGURACIÓN INICIAL
 // ==========================================
 
-// Registrar Service Worker
+// Registrar Service Worker con actualización automática
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("pwa-sw.js").catch(err => 
+  navigator.serviceWorker.register("pwa-sw.js").then(registration => {
+    console.log("Service Worker registrado:", registration);
+    
+    // Verificar actualizaciones periódicamente
+    setInterval(() => {
+      registration.update();
+    }, 60000); // Cada minuto
+    
+    // Escuchar actualizaciones
+    registration.addEventListener("updatefound", () => {
+      const newWorker = registration.installing;
+      console.log("Nueva versión del Service Worker encontrada");
+      
+      newWorker.addEventListener("statechange", () => {
+        if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+          // Nueva versión disponible, recargar para aplicarla
+          console.log("Nueva versión instalada. Recargando...");
+          window.location.reload();
+        }
+      });
+    });
+  }).catch(err => 
     console.error("Error al registrar Service Worker:", err)
   );
+  
+  // Forzar actualización cuando la página gana foco
+  window.addEventListener("focus", () => {
+    navigator.serviceWorker.getRegistration().then(registration => {
+      if (registration) {
+        registration.update();
+      }
+    });
+  });
 }
 
 // Variables globales
