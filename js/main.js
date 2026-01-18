@@ -1,13 +1,42 @@
+// ==========================================
+// CONFIGURACIÓN INICIAL
+// ==========================================
+
 // Registrar Service Worker
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("pwa-sw.js");
+  navigator.serviceWorker.register("pwa-sw.js").catch(err => 
+    console.error("Error al registrar Service Worker:", err)
+  );
 }
 
-// Variables para el banner de instalación
-let deferredPrompt;
+// Variables globales
+let deferredPrompt = null;
 let installBannerShown = false;
+let db = null;
 
-// Funcionalidad de Notificaciones
+const DB_NAME = "CherryDB";
+const STORE_NAME = "cerezas";
+
+// ==========================================
+// INDEXEDDB - Base de datos
+// ==========================================
+
+const req = indexedDB.open(DB_NAME, 1);
+req.onupgradeneeded = e => {
+  db = e.target.result;
+  if (!db.objectStoreNames.contains(STORE_NAME)) {
+    db.createObjectStore(STORE_NAME, { keyPath: "id", autoIncrement: true });
+  }
+};
+req.onsuccess = e => {
+  db = e.target.result;
+  listar();
+};
+
+// ==========================================
+// NOTIFICACIONES - Sistema mejorado
+// ==========================================
+
 async function solicitarPermisoNotificaciones() {
   if (!("Notification" in window)) {
     alert("Tu navegador no soporta notificaciones");
@@ -28,16 +57,21 @@ async function solicitarPermisoNotificaciones() {
 }
 
 async function enviarNotificacion() {
-  // Mostrar mensaje emergente con poema sobre cerezas
-  const poemas = [
-    "🍒 Las cerezas rojas brillan,\nen el árbol primaveral.\nDulce fruto que ilumina,\ncon su sabor especial.",
-    "🍒 Cereza dulce, fruto rojo,\nque alegra el paladar.\nEn cada bocado, un abrazo,\nde sabor sin igual.",
-    "🍒 Roja como la pasión,\ndulce como el amor.\nLa cereza es la razón,\nde un sabroso sabor."
+  // Frases creativas sobre cerezas
+  const frasesCerezas = [
+    "🍒 Las cerezas rojas brillan en el árbol primaveral. Dulce fruto que ilumina con su sabor especial.",
+    "🍒 Cereza dulce, fruto rojo que alegra el paladar. En cada bocado, un abrazo de sabor sin igual.",
+    "🍒 Roja como la pasión, dulce como el amor. La cereza es la razón de un sabroso sabor.",
+    "🍒 Cerezas frescas, carnosas y jugosas. ¡El tesoro rojo de la naturaleza!",
+    "🍒 Cada cereza es una pequeña joya roja llena de dulzura y energía vital."
   ];
   
-  const poemaAleatorio = poemas[Math.floor(Math.random() * poemas.length)];
-  alert(poemaAleatorio);
+  const fraseAleatoria = frasesCerezas[Math.floor(Math.random() * frasesCerezas.length)];
+  
+  // Mostrar mensaje emergente
+  alert(fraseAleatoria);
 
+  // Solicitar permisos y enviar notificación
   const tienePermiso = await solicitarPermisoNotificaciones();
   
   if (!tienePermiso) {
@@ -54,11 +88,11 @@ async function enviarNotificacion() {
   };
 
   // Enviar notificación desde el contexto principal
-  if ("Notification" in window && Notification.permission === "granted") {
+  if (Notification.permission === "granted") {
     new Notification("CherryManager", opciones);
   }
 
-  // También enviar desde el Service Worker si está disponible (para PWA instalada)
+  // También enviar desde el Service Worker si está disponible
   if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
     navigator.serviceWorker.ready.then(registration => {
       registration.showNotification("CherryManager", opciones);
@@ -66,255 +100,200 @@ async function enviarNotificacion() {
   }
 }
 
-let db;
-const DB_NAME = "CherryDB";
-const STORE_NAME = "cerezas";
+// ==========================================
+// PWA INSTALLATION - Sistema de instalación
+// ==========================================
 
-const req = indexedDB.open(DB_NAME, 1);
-req.onupgradeneeded = e => {
-  const db = e.target.result;
-  if (!db.objectStoreNames.contains(STORE_NAME)) {
-    db.createObjectStore(STORE_NAME, { keyPath: "id", autoIncrement: true });
-  }
-};
-req.onsuccess = e => {
-  db = e.target.result;
-  listar();
-};
-
-// Event listeners cuando el DOM esté listo
-document.addEventListener("DOMContentLoaded", () => {
-  // Botón de instalación en el header
-  const btnInstalar = document.getElementById("instalar-app");
-  
-  // Banner de instalación PWA
-  window.addEventListener("beforeinstallprompt", (e) => {
-    // Prevenir que el banner se muestre automáticamente
-    e.preventDefault();
-    // Guardar el evento para usarlo más tarde
-    deferredPrompt = e;
-    
-    // Mostrar el botón de instalación en el header
-    if (btnInstalar && !window.matchMedia("(display-mode: standalone)").matches) {
-      btnInstalar.style.display = "inline-block";
-    }
-    
-    // Mostrar banner personalizado si no se ha mostrado antes
-    if (!installBannerShown && !window.matchMedia("(display-mode: standalone)").matches) {
-      mostrarBannerInstalacion();
-    }
-  });
-
-  // Detectar si la PWA ya está instalada
-  if (window.matchMedia("(display-mode: standalone)").matches) {
-    console.log("PWA ya está instalada");
-    if (btnInstalar) {
-      btnInstalar.style.display = "none";
-    }
-  }
-
-  // Conectar el botón de instalación con la función
-  if (btnInstalar) {
-    btnInstalar.onclick = instalarPWA;
-  }
-
-  // Botón de notificación
-  const btnNotificar = document.getElementById("notificar");
-  if (btnNotificar) {
-    btnNotificar.onclick = enviarNotificacion;
-  }
-
-  // Botón agregar
-  const btnAgregar = document.getElementById("agregar");
-  if (btnAgregar) {
-    btnAgregar.onclick = () => {
-      const nombre = document.getElementById("nombre").value.trim();
-      const cantidad = parseInt(document.getElementById("cantidad").value);
-      if (!nombre || !cantidad) return alert("Completa todos los campos");
-      const tx = db.transaction(STORE_NAME, "readwrite");
-      tx.objectStore(STORE_NAME).add({ nombre, cantidad });
-      tx.oncomplete = () => {
-        listar();
-        document.getElementById("nombre").value = "";
-        document.getElementById("cantidad").value = "";
-      };
-    };
-  }
-});
-
-// Listar
-function listar() {
-  const lista = document.getElementById("lista");
-  lista.innerHTML = "";
-  const tx = db.transaction(STORE_NAME, "readonly");
-  const store = tx.objectStore(STORE_NAME);
-  store.openCursor().onsuccess = e => {
-    const cursor = e.target.result;
-    if (cursor) {
-      const li = document.createElement("li");
-      li.innerHTML = `
-        <span>${cursor.value.nombre} - ${cursor.value.cantidad} unidades</span>
-        <div>
-          <button onclick="editar(${cursor.key}, '${cursor.value.nombre}', ${cursor.value.cantidad})">Editar</button>
-          <button onclick="eliminar(${cursor.key})">Eliminar</button>
-        </div>
-      `;
-      lista.appendChild(li);
-      cursor.continue();
-    }
-  };
-}
-
-// Editar
-function editar(id, nombreActual, cantidadActual) {
-  const nombre = prompt("Nuevo nombre:", nombreActual);
-  const cantidad = parseInt(prompt("Nueva cantidad:", cantidadActual));
-  if (!nombre || !cantidad) return;
-  const tx = db.transaction(STORE_NAME, "readwrite");
-  tx.objectStore(STORE_NAME).put({ id, nombre, cantidad });
-  tx.oncomplete = listar;
-}
-
-// Eliminar
-function eliminar(id) {
-  if (!confirm("¿Eliminar esta cereza?")) return;
-  const tx = db.transaction(STORE_NAME, "readwrite");
-  tx.objectStore(STORE_NAME).delete(id);
-  tx.oncomplete = listar;
-}
-
-// Función para mostrar banner de instalación
 function mostrarBannerInstalacion() {
-  // Buscar si ya existe un banner
-  let banner = document.getElementById("install-banner");
-  if (banner) {
-    return; // Ya existe, no mostrar de nuevo
+  if (installBannerShown || document.getElementById("install-banner")) {
+    return;
   }
 
-  // Crear banner
-  banner = document.createElement("div");
+  const banner = document.createElement("div");
   banner.id = "install-banner";
-  banner.style.cssText = `
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: linear-gradient(135deg, #c2185b 0%, #8e1650 100%);
-    color: white;
-    padding: 15px 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    z-index: 10000;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    font-family: Arial, sans-serif;
-    max-width: 90%;
-    animation: slideUp 0.3s ease-out;
-  `;
-
-  // Agregar estilos CSS para animación
-  if (!document.getElementById("install-banner-styles")) {
-    const style = document.createElement("style");
-    style.id = "install-banner-styles";
-    style.textContent = `
-      @keyframes slideUp {
-        from {
-          transform: translateX(-50%) translateY(100px);
-          opacity: 0;
-        }
-        to {
-          transform: translateX(-50%) translateY(0);
-          opacity: 1;
-        }
-      }
-    `;
-    document.head.appendChild(style);
-  }
+  banner.className = "alert alert-info alert-dismissible fade show position-fixed bottom-0 start-50 translate-middle-x m-3 shadow";
+  banner.style.cssText = "max-width: 90%; z-index: 10000;";
 
   banner.innerHTML = `
-    <span style="font-size: 24px;">📱</span>
-    <div>
-      <strong>Instala CherryManager</strong>
-      <div style="font-size: 12px; margin-top: 3px;">Acceso rápido desde tu pantalla principal</div>
+    <div class="d-flex align-items-center gap-3">
+      <i class="bi bi-phone fs-4"></i>
+      <div class="flex-grow-1">
+        <strong>Instala CherryManager</strong>
+        <div class="small">Acceso rápido desde tu pantalla principal</div>
+      </div>
+      <button id="btn-install" class="btn btn-light btn-sm me-2">
+        Instalar
+      </button>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
-    <button id="btn-install" style="
-      background: white;
-      color: #c2185b;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 14px;
-    ">Instalar</button>
-    <button id="btn-dismiss" style="
-      background: transparent;
-      color: white;
-      border: 1px solid white;
-      padding: 8px 12px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 14px;
-    ">✕</button>
   `;
 
   document.body.appendChild(banner);
   installBannerShown = true;
 
-  // Event listeners para los botones
   document.getElementById("btn-install").onclick = instalarPWA;
-  document.getElementById("btn-dismiss").onclick = () => {
-    banner.remove();
-  };
 }
 
-// Función para instalar la PWA
 async function instalarPWA() {
   if (!deferredPrompt) {
     alert("La instalación no está disponible en este momento.");
     return;
   }
 
-  // Mostrar el prompt de instalación
   deferredPrompt.prompt();
-  
-  // Esperar a que el usuario responda
   const { outcome } = await deferredPrompt.userChoice;
   
-  if (outcome === "accepted") {
-    console.log("Usuario aceptó instalar la PWA");
-  } else {
-    console.log("Usuario rechazó instalar la PWA");
-  }
+  console.log(`Usuario ${outcome === "accepted" ? "aceptó" : "rechazó"} instalar la PWA`);
   
-  // Limpiar el prompt
   deferredPrompt = null;
-  
-  // Ocultar el banner
-  const banner = document.getElementById("install-banner");
-  if (banner) {
-    banner.remove();
-  }
-  
-  // Ocultar el botón del header
-  const btnInstalar = document.getElementById("instalar-app");
-  if (btnInstalar) {
-    btnInstalar.style.display = "none";
-  }
+  ocultarBannersInstalacion();
 }
+
+function ocultarBannersInstalacion() {
+  const banner = document.getElementById("install-banner");
+  if (banner) banner.remove();
+  
+  const btnInstalar = document.getElementById("instalar-app");
+  if (btnInstalar) btnInstalar.classList.add("d-none");
+}
+
+// ==========================================
+// CRUD - Operaciones de inventario
+// ==========================================
+
+function listar() {
+  const lista = document.getElementById("lista");
+  if (!lista) return;
+
+  lista.innerHTML = "";
+  const tx = db.transaction(STORE_NAME, "readonly");
+  const store = tx.objectStore(STORE_NAME);
+  
+  store.openCursor().onsuccess = e => {
+    const cursor = e.target.result;
+    if (cursor) {
+      const li = document.createElement("li");
+      li.className = "list-group-item d-flex justify-content-between align-items-center";
+      
+      li.innerHTML = `
+        <div class="flex-grow-1">
+          <strong>${escapeHtml(cursor.value.nombre)}</strong>
+          <span class="badge bg-primary rounded-pill ms-2">${cursor.value.cantidad} unidades</span>
+        </div>
+        <div class="btn-group btn-group-sm" role="group">
+          <button class="btn btn-outline-primary" onclick="editar(${cursor.key}, '${escapeHtml(cursor.value.nombre)}', ${cursor.value.cantidad})">
+            <i class="bi bi-pencil"></i> Editar
+          </button>
+          <button class="btn btn-outline-danger" onclick="eliminar(${cursor.key})">
+            <i class="bi bi-trash"></i> Eliminar
+          </button>
+        </div>
+      `;
+      
+      lista.appendChild(li);
+      cursor.continue();
+    }
+  };
+}
+
+function editar(id, nombreActual, cantidadActual) {
+  const nombre = prompt("Nuevo nombre:", nombreActual);
+  if (!nombre) return;
+  
+  const cantidad = parseInt(prompt("Nueva cantidad:", cantidadActual));
+  if (!cantidad || cantidad < 1) return;
+  
+  const tx = db.transaction(STORE_NAME, "readwrite");
+  tx.objectStore(STORE_NAME).put({ id, nombre, cantidad });
+  tx.oncomplete = listar;
+}
+
+function eliminar(id) {
+  if (!confirm("¿Eliminar esta cereza del inventario?")) return;
+  
+  const tx = db.transaction(STORE_NAME, "readwrite");
+  tx.objectStore(STORE_NAME).delete(id);
+  tx.oncomplete = listar;
+}
+
+function escapeHtml(text) {
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return text.replace(/[&<>"']/g, m => map[m]);
+}
+
+// ==========================================
+// EVENT LISTENERS - Inicialización
+// ==========================================
+
+document.addEventListener("DOMContentLoaded", () => {
+  const btnInstalar = document.getElementById("instalar-app");
+  const btnNotificar = document.getElementById("notificar");
+  const btnAgregar = document.getElementById("agregar");
+
+  // Evento de instalación PWA
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    if (btnInstalar && !window.matchMedia("(display-mode: standalone)").matches) {
+      btnInstalar.classList.remove("d-none");
+    }
+    
+    if (!installBannerShown && !window.matchMedia("(display-mode: standalone)").matches) {
+      mostrarBannerInstalacion();
+    }
+  });
+
+  // Detectar si ya está instalada
+  if (window.matchMedia("(display-mode: standalone)").matches && btnInstalar) {
+    btnInstalar.classList.add("d-none");
+  }
+
+  // Botón de instalación
+  if (btnInstalar) {
+    btnInstalar.onclick = instalarPWA;
+  }
+
+  // Botón de notificación
+  if (btnNotificar) {
+    btnNotificar.onclick = enviarNotificacion;
+  }
+
+  // Botón agregar
+  if (btnAgregar) {
+    btnAgregar.onclick = () => {
+      const nombreInput = document.getElementById("nombre");
+      const cantidadInput = document.getElementById("cantidad");
+      
+      const nombre = nombreInput.value.trim();
+      const cantidad = parseInt(cantidadInput.value);
+      
+      if (!nombre || !cantidad || cantidad < 1) {
+        alert("Por favor, completa todos los campos correctamente.");
+        return;
+      }
+      
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      tx.objectStore(STORE_NAME).add({ nombre, cantidad });
+      tx.oncomplete = () => {
+        listar();
+        nombreInput.value = "";
+        cantidadInput.value = "";
+        nombreInput.focus();
+      };
+    };
+  }
+});
 
 // Detectar cuando la PWA es instalada
 window.addEventListener("appinstalled", () => {
   console.log("PWA instalada exitosamente");
   deferredPrompt = null;
-  const banner = document.getElementById("install-banner");
-  if (banner) {
-    banner.remove();
-  }
-  // Ocultar el botón de instalación
-  const btnInstalar = document.getElementById("instalar-app");
-  if (btnInstalar) {
-    btnInstalar.style.display = "none";
-  }
+  ocultarBannersInstalacion();
 });
