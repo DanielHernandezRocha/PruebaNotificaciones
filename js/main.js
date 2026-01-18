@@ -84,12 +84,20 @@ req.onsuccess = e => {
 
 // Event listeners cuando el DOM esté listo
 document.addEventListener("DOMContentLoaded", () => {
+  // Botón de instalación en el header
+  const btnInstalar = document.getElementById("instalar-app");
+  
   // Banner de instalación PWA
   window.addEventListener("beforeinstallprompt", (e) => {
     // Prevenir que el banner se muestre automáticamente
     e.preventDefault();
     // Guardar el evento para usarlo más tarde
     deferredPrompt = e;
+    
+    // Mostrar el botón de instalación en el header
+    if (btnInstalar && !window.matchMedia("(display-mode: standalone)").matches) {
+      btnInstalar.style.display = "inline-block";
+    }
     
     // Mostrar banner personalizado si no se ha mostrado antes
     if (!installBannerShown && !window.matchMedia("(display-mode: standalone)").matches) {
@@ -100,6 +108,14 @@ document.addEventListener("DOMContentLoaded", () => {
   // Detectar si la PWA ya está instalada
   if (window.matchMedia("(display-mode: standalone)").matches) {
     console.log("PWA ya está instalada");
+    if (btnInstalar) {
+      btnInstalar.style.display = "none";
+    }
+  }
+
+  // Conectar el botón de instalación con la función
+  if (btnInstalar) {
+    btnInstalar.onclick = instalarPWA;
   }
 
   // Botón de notificación
@@ -280,6 +296,12 @@ async function instalarPWA() {
   if (banner) {
     banner.remove();
   }
+  
+  // Ocultar el botón del header
+  const btnInstalar = document.getElementById("instalar-app");
+  if (btnInstalar) {
+    btnInstalar.style.display = "none";
+  }
 }
 
 // Detectar cuando la PWA es instalada
@@ -289,5 +311,10 @@ window.addEventListener("appinstalled", () => {
   const banner = document.getElementById("install-banner");
   if (banner) {
     banner.remove();
+  }
+  // Ocultar el botón de instalación
+  const btnInstalar = document.getElementById("instalar-app");
+  if (btnInstalar) {
+    btnInstalar.style.display = "none";
   }
 });
